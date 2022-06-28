@@ -1,12 +1,30 @@
-import { createStore } from 'vuex'
+import { createStore } from "vuex";
+import axios from "axios";
 
-export default createStore({
+interface User {
+  isLogin: boolean;
+}
+
+export default createStore<User>({
   state: {
+    isLogin: false,
   },
   mutations: {
+    setIsLogin: function (state, data: boolean) {
+      state.isLogin = data;
+    },
   },
   actions: {
+    // 로그인
+    requestLogin: function (payload, data: any) {
+      const url = "/api/auth/v1/login";
+      return axios.post(url, data);
+    },
+    // 중복 로그인 삭제
+    requestRemoveToken: function (payload, data: any) {
+      const url = `/api/auth/v1/logout-with-account`;
+      return axios.delete(url, { data });
+    },
   },
-  modules: {
-  }
-})
+  modules: {},
+});
