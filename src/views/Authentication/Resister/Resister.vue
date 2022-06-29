@@ -1,85 +1,71 @@
 <template>
-  <div class="resister-container">
-    <el-form
-      ref="refresisterForm"
-      class="resister-form"
-      :model="resisterForm"
-      :rules="rules"
-      @keyup.enter="onSubmit"
-      label-position="top"
+  <el-form
+    ref="refresisterForm"
+    class="resister-form"
+    :model="resisterForm"
+    :rules="rules"
+    @keyup.enter="onSubmit('Resister')"
+    label-position="top"
+  >
+    <!-- 이메일 -->
+    <el-form-item prop="email" label="E-mail">
+      <el-input
+        placeholder="Input E-mail"
+        v-model="resisterForm.email"
+        @input="activeBtn"
+      />
+    </el-form-item>
+
+    <!-- 패스워드 -->
+    <el-form-item prop="password" label="password">
+      <el-input
+        name="password"
+        type="password"
+        placeholder="Input Password"
+        v-model="resisterForm.password"
+        @input="activeBtn"
+      />
+    </el-form-item>
+
+    <!-- 패스워드 확인 -->
+    <el-form-item prop="passwordConfirm" label="password confirmation">
+      <el-input
+        name="passwordConfirm"
+        type="password"
+        placeholder="Input Password Confirmation"
+        v-model="resisterForm.passwordConfirm"
+        @input="activeBtn"
+      />
+    </el-form-item>
+
+    <!-- 닉네임 -->
+    <el-form-item prop="name" label="nick-name">
+      <el-input
+        name="name"
+        type="text"
+        placeholder="Input Nick-Name"
+        v-model="resisterForm.name"
+        @input="activeBtn"
+      />
+    </el-form-item>
+    <el-button
+      @click="onSubmit('Resister')"
+      type="primary"
+      class="resister-btn"
+      size="default"
+      :disabled="isBtn"
     >
-      <div class="title-container">
-        <h3 class="title text-center">Resister</h3>
-      </div>
-
-      <!-- 이메일 -->
-      <el-form-item prop="email" label="E-mail">
-        <el-input
-          placeholder="Input E-mail"
-          v-model="resisterForm.email"
-          @input="activeBtn"
-        />
-      </el-form-item>
-
-      <!-- 패스워드 -->
-      <el-form-item prop="password" label="password">
-        <el-input
-          name="password"
-          type="password"
-          placeholder="Input Password"
-          v-model="resisterForm.password"
-          @input="activeBtn"
-        />
-      </el-form-item>
-
-      <!-- 패스워드 확인 -->
-      <el-form-item prop="passwordConfirm" label="password confirmation">
-        <el-input
-          name="passwordConfirm"
-          type="password"
-          placeholder="Input Password Confirmation"
-          v-model="resisterForm.passwordConfirm"
-          @input="activeBtn"
-        />
-      </el-form-item>
-
-      <!-- 닉네임 -->
-      <el-form-item prop="name" label="nick-name">
-        <el-input
-          name="name"
-          type="text"
-          placeholder="Input Nick-Name"
-          v-model="resisterForm.name"
-          @input="activeBtn"
-        />
-      </el-form-item>
-
-      <el-button
-        @click="onSubmit"
-        type="primary"
-        class="resister-btn"
-        size="default"
-        :disabled="isBtn"
-      >
-        Submit
-      </el-button>
-      <p class="text-center text-muted">
-        기존 가입한 이메일이 존재합니까?
-        <span @click="goPage('Login')" class="text-primary fw-semibold btn-text"
-          >로그인</span
-        >
-      </p>
-    </el-form>
-  </div>
+      Submit
+    </el-button>
+  </el-form>
 </template>
 
 <script lang="ts">
 import { defineComponent, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { ElMessage } from "element-plus";
-import { useRouter } from "vue-router";
 
-interface resisterForm {
+interface ResisterForm {
   email: string;
   password: string;
   passwordConfirm: string;
@@ -87,13 +73,14 @@ interface resisterForm {
 }
 
 export default defineComponent({
-  setup() {
+  components: {},
+  emits: ["setLoading", "setEmailAuth"],
+  setup(props, { emit }) {
     const store = useStore();
-    const router = useRouter();
 
     // 회원가입 폼
     const refresisterForm = ref<any>(null);
-    const resisterForm = reactive<resisterForm>({
+    const resisterForm = reactive<ResisterForm>({
       email: "",
       password: "",
       passwordConfirm: "",
@@ -127,7 +114,7 @@ export default defineComponent({
       }
     };
 
-    const rules = reactive({
+    const rules = reactive<any>({
       email: [
         { required: true, message: "이메일을 입력해 주세요.", trigger: "blur" },
         {
@@ -207,19 +194,28 @@ export default defineComponent({
       isBtn.value = true;
     }
 
-    // 로그인 요청
-    async function onSubmit() {
+    // 회원가입 요청
+    async function onSubmit(requestType: string) {
       if (isBtn.value) return;
-      console.log("회원가입 요청");
-
+      emit("setLoading", true);
       try {
-        const response: Promise<any> = await store.dispatch("requestJoin", {
-          ...resisterForm,
-        });
-
+        const resisterResponse: Promise<any> = await store.dispatch(
+          "requestJoin",
+          {
+            ...resisterForm,
+          }
+        );
+        const emailResponse: Promise<any> = await store.dispatch(
+          "requestSendJoinCode",
+          {
+            ...resisterForm,
+          }
+        );
+        emit("setLoading", false); // 로딩스피너
+        emit("setEmailAuth", true, resisterForm.email); // 이메일 인증 열기
         // 이메일 인증으로 이동
       } catch (error: any) {
-        console.log(error.response);
+        emit("setLoading", false);
         const status = error.response.status;
         if (status === 400) {
           ElMessage({
@@ -241,13 +237,6 @@ export default defineComponent({
       }
     }
 
-    // 페이지 이동
-    function goPage(data: string) {
-      router.push({
-        name: data,
-      });
-    }
-
     return {
       resisterForm,
       rules,
@@ -255,81 +244,11 @@ export default defineComponent({
       activeBtn,
       isBtn,
       refresisterForm,
-      goPage,
     };
   },
 });
 </script>
 
 <style lang="scss" scoped>
-$bg: #2d3a4b;
-$dark_gray: #889aa4;
-$light_gray: #eee;
-.resister-container {
-  height: 100vh;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  background-color: $bg;
-  align-items: center;
-  .resister-form {
-    width: 500px;
-    background-color: $light_gray;
-    padding: 40px;
-    border-radius: 10px;
-  }
-  .title-container {
-    .title {
-      font-size: 25px;
-      color: $bg;
-      margin: 0px auto 25px auto;
-      text-align: center;
-      font-weight: bold;
-    }
-  }
-}
-
-.resister-btn {
-  width: 100%;
-  margin-bottom: 30px;
-}
-
-.btn-text {
-  font-size: 14px;
-  cursor: pointer;
-  &:hover {
-    color: crimson !important;
-  }
-}
-</style>
-
-<style lang="scss">
-.resister-container {
-  .el-input__wrapper {
-    background-color: transparent;
-    box-shadow: none;
-    padding: 0px;
-  }
-
-  .el-input input {
-    background: transparent;
-    border: 0px;
-    -webkit-appearance: none;
-    border-radius: 0px;
-    padding: 10px 5px 10px 15px;
-    height: 42px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
-    color: #454545;
-  }
-  //hiden the input border
-  .el-input__inner {
-    box-shadow: none !important;
-  }
-
-  .el-button {
-    height: 42px;
-  }
-}
+@import "./resister.scss";
 </style>

@@ -30,6 +30,16 @@ export default createStore<User>({
       const url = "/api/auth/v1/user";
       return axios.post(url, data);
     },
+    // 인증 메일 보내기
+    requestSendJoinCode: function (payload, data) {
+      const url = "/api/auth/v1/join/code";
+      return axios.post(url, data);
+    },
+    // 인증 코드 인증
+    requestVerifyJoin: function (payload, data) {
+      const url = "/api/auth/v1/join/verification";
+      return axios.post(url, data);
+    },
   },
   modules: {},
 });
