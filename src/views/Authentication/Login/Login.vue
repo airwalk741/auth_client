@@ -36,7 +36,7 @@
         size="default"
         :disabled="isBtn"
       >
-        Login
+        Submit
       </el-button>
       <p class="text-center text-muted">
         계정이 없으신가요?
@@ -125,8 +125,15 @@ export default defineComponent({
         .catch(async (err: any) => {
           const errData = err.response.data;
           const { status } = err.response;
-          const errMessage =
-            errData.message !== undefined ? JSON.parse(errData.message) : "";
+
+          let errMessage;
+
+          try {
+            errMessage =
+              errData.message !== undefined ? JSON.parse(errData.message) : "";
+          } catch {
+            //
+          }
 
           if (status === 429) {
             // 오래전에 로그인 했던것 삭제

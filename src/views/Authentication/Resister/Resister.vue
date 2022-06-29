@@ -61,11 +61,13 @@
         size="default"
         :disabled="isBtn"
       >
-        resister
+        Submit
       </el-button>
       <p class="text-center text-muted">
         기존 가입한 이메일이 존재합니까?
-        <span class="text-primary fw-semibold btn-text">로그인</span>
+        <span @click="goPage('Login')" class="text-primary fw-semibold btn-text"
+          >로그인</span
+        >
       </p>
     </el-form>
   </div>
@@ -75,6 +77,7 @@
 import { defineComponent, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { ElMessage } from "element-plus";
+import { useRouter } from "vue-router";
 
 interface resisterForm {
   email: string;
@@ -86,6 +89,7 @@ interface resisterForm {
 export default defineComponent({
   setup() {
     const store = useStore();
+    const router = useRouter();
 
     // 회원가입 폼
     const refresisterForm = ref<any>(null);
@@ -146,7 +150,6 @@ export default defineComponent({
           trigger: ["change", "blur"],
         },
         { validator: validatePassword, trigger: ["change", "blur"] },
-        // { validator: validatePassword2, trigger: ["change", "blur"] },
       ],
       passwordConfirm: [
         {
@@ -205,9 +208,44 @@ export default defineComponent({
     }
 
     // 로그인 요청
-    function onSubmit(): void {
+    async function onSubmit() {
       if (isBtn.value) return;
       console.log("회원가입 요청");
+
+      try {
+        const response: Promise<any> = await store.dispatch("requestJoin", {
+          ...resisterForm,
+        });
+
+        // 이메일 인증으로 이동
+      } catch (error: any) {
+        console.log(error.response);
+        const status = error.response.status;
+        if (status === 400) {
+          ElMessage({
+            showClose: true,
+            message: `이메일 형식을 확인해 주세요.`,
+            type: "warning",
+            grouping: true,
+          });
+        } else if (status === 409) {
+          ElMessage({
+            showClose: true,
+            message: `이미 가입된 회원입니다.`,
+            type: "warning",
+            grouping: true,
+          });
+        } else {
+          console.log("서버에러");
+        }
+      }
+    }
+
+    // 페이지 이동
+    function goPage(data: string) {
+      router.push({
+        name: data,
+      });
     }
 
     return {
@@ -217,6 +255,7 @@ export default defineComponent({
       activeBtn,
       isBtn,
       refresisterForm,
+      goPage,
     };
   },
 });
