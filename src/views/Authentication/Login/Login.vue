@@ -1,53 +1,42 @@
 <template>
-  <div class="login-container">
-    <el-form
-      ref="refloginForm"
-      class="login-form"
-      :model="loginForm"
-      :rules="rules"
-      @keyup.enter="onSubmit"
+  <el-form
+    ref="refloginForm"
+    class="login-form"
+    :model="loginForm"
+    :rules="rules"
+    @keyup.enter="onSubmit"
+  >
+    <el-form-item prop="email">
+      <el-input
+        placeholder="Input E-mail"
+        v-model="loginForm.email"
+        @input="activeBtn"
+        :disabled="isLoading"
+      />
+    </el-form-item>
+    <el-form-item prop="password">
+      <el-input
+        name="password"
+        type="password"
+        placeholder="Input Password"
+        v-model="loginForm.password"
+        @input="activeBtn"
+        :disabled="isLoading"
+      />
+    </el-form-item>
+    <p class="text-end text-muted btn-text btn-text mb-0">
+      비밀번호를 잊으셨나요?
+    </p>
+    <el-button
+      @click="onSubmit"
+      type="primary"
+      class="login-btn"
+      size="default"
+      :disabled="isBtn"
     >
-      <div class="title-container">
-        <h3 class="title text-center">Login</h3>
-      </div>
-      <el-form-item prop="email">
-        <el-input
-          placeholder="Input E-mail"
-          v-model="loginForm.email"
-          @input="activeBtn"
-        />
-      </el-form-item>
-      <el-form-item prop="password">
-        <el-input
-          name="password"
-          type="password"
-          placeholder="Input Password"
-          v-model="loginForm.password"
-          @input="activeBtn"
-        />
-      </el-form-item>
-      <p class="text-end text-muted btn-text btn-text">
-        비밀번호를 잊으셨나요?
-      </p>
-      <el-button
-        @click="onSubmit"
-        type="primary"
-        class="login-btn"
-        size="default"
-        :disabled="isBtn"
-      >
-        Submit
-      </el-button>
-      <p class="text-center text-muted">
-        계정이 없으신가요?
-        <span
-          @click="goPage('Resister')"
-          class="text-primary fw-semibold btn-text"
-          >회원가입</span
-        >
-      </p>
-    </el-form>
-  </div>
+      Submit
+    </el-button>
+  </el-form>
 </template>
 
 <script lang="ts">
@@ -56,6 +45,7 @@ import { useStore } from "vuex";
 import { ElMessage } from "element-plus";
 import axios from "axios";
 import { useRouter } from "vue-router";
+import { sendEmailText } from "../components/EmailAuth/emailText";
 
 interface LoginForm {
   email: string;
@@ -63,9 +53,17 @@ interface LoginForm {
 }
 
 export default defineComponent({
-  setup() {
+  emits: ["setLoading", "setEmailAuth"],
+  props: {
+    isLoading: {
+      type: Boolean,
+    },
+  },
+
+  setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
+    const projectName = process.env.VUE_APP_PROJECTNAME;
 
     // 로그인 폼
     const loginForm = reactive<LoginForm>({
@@ -74,7 +72,7 @@ export default defineComponent({
     });
 
     // 유효성 검사
-    const rules = reactive({
+    const rules = reactive<any>({
       email: [
         { required: true, message: "이메일을 입력해 주세요.", trigger: "blur" },
         {
@@ -115,19 +113,22 @@ export default defineComponent({
 
     // 로그인 요청
     function onSubmit(): void {
-      // if (isBtn.value) return;
+      if (isBtn.value) return;
+
+      emit("setLoading", true);
+
       store
         .dispatch("requestLogin", { ...loginForm })
         .then(res => {
           console.log(res);
           store.commit("setIsLogin", true);
+          emit("setLoading", false);
         })
         .catch(async (err: any) => {
           const errData = err.response.data;
           const { status } = err.response;
-
-          let errMessage;
-
+          let errMessage: any;
+          if (status !== 401) emit("setLoading", false);
           try {
             errMessage =
               errData.message !== undefined ? JSON.parse(errData.message) : "";
@@ -173,6 +174,21 @@ export default defineComponent({
             }
           } else if (status === 401) {
             // 인증 대기 유저
+            const emailResponse: Promise<any> = await store.dispatch(
+              "requestSendJoinCode",
+              {
+                ...loginForm,
+                from: "iJoon.noreply",
+                subject: `${projectName}에 오신것을 환영합니다.`,
+                contentType: "text/html",
+                // charset: "EUC-KR",
+                charset: "UTF-8",
+                body: sendEmailText("join", projectName),
+              }
+            );
+
+            emit("setLoading", false); // 로딩스피너
+            emit("setEmailAuth", true, loginForm.email); // 이메일 인증 열기
           } else if (status === 404 || status === 400) {
             // 이메일, 비밀번호 틀렸을 때
             ElMessage({
@@ -212,102 +228,17 @@ export default defineComponent({
         });
     }
 
-    // 페이지 이동
-    function goPage(data: string) {
-      router.push({
-        name: data,
-      });
-    }
-
     return {
       loginForm,
       rules,
       onSubmit,
       activeBtn,
       isBtn,
-      goPage,
     };
   },
 });
 </script>
 
 <style lang="scss" scoped>
-$bg: #2d3a4b;
-$dark_gray: #889aa4;
-$light_gray: #eee;
-.login-container {
-  height: 100vh;
-  width: 100%;
-  background-color: #2d3a4b;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  .login-form {
-    width: 500px;
-    background-color: $light_gray;
-    padding: 40px;
-    border-radius: 10px;
-  }
-  .title-container {
-    .title {
-      font-size: 25px;
-      color: $bg;
-      margin: 0px auto 25px auto;
-      text-align: center;
-      font-weight: bold;
-    }
-  }
-}
-
-.svg-container {
-  padding-left: 6px;
-  color: $dark_gray;
-  text-align: center;
-  width: 30px;
-}
-
-.login-btn {
-  width: 100%;
-  margin-bottom: 30px;
-}
-
-.btn-text {
-  font-size: 14px;
-  cursor: pointer;
-  &:hover {
-    color: crimson !important;
-  }
-}
-</style>
-
-<style lang="scss">
-//css 样式重置 增加个前缀避免全局污染
-.login-container {
-  .el-input__wrapper {
-    background-color: transparent;
-    box-shadow: none;
-    padding: 0px;
-  }
-
-  .el-input input {
-    background: transparent;
-    border: 0px;
-    -webkit-appearance: none;
-    border-radius: 0px;
-    padding: 10px 5px 10px 15px;
-    height: 42px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
-    color: #454545;
-  }
-  //hiden the input border
-  .el-input__inner {
-    box-shadow: none !important;
-  }
-
-  .el-button {
-    height: 42px;
-  }
-}
+@import "./login.scss";
 </style>

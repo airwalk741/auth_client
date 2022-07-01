@@ -14,9 +14,6 @@
           가입하신 이메일로 인증코드를 보냈습니다.
         </p>
         <p class="title text-center">인증을 통해 회원가입을 완료해 주세요.</p>
-        <div class="d-flex justify-content-center">
-          <el-button type="primary" text @click="reSendMail">재전송</el-button>
-        </div>
       </div>
 
       <!-- 이메일 -->
@@ -39,20 +36,28 @@
         type="primary"
         class="email-btn"
         size="default"
+        @click="onSubmit"
       >
         Submit
       </el-button>
+      <p class="text-center text-muted mb-0">
+        인증번호를 재발송 하시겠습니까?
+        <span @click="reSendMail" class="text-primary fw-semibold btn-text"
+          >재전송</span
+        >
+      </p>
     </el-form>
   </div>
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType, reactive, ref } from "vue";
+import { computed, defineComponent, PropType, reactive, ref, watch } from "vue";
 import { useStore } from "vuex";
 import { ElMessage } from "element-plus";
+import { sendEmailText } from "./emailText";
 
 interface EmailForm {
-  email: string | unknown;
+  email: any;
   code: string;
 }
 
@@ -68,10 +73,10 @@ export default defineComponent({
   emits: ["setLoading"],
   setup(props, { emit }) {
     const store = useStore();
-
+    const projectName = process.env.VUE_APP_PROJECTNAME;
     const refemailForm = ref(null);
     const emailForm = reactive<EmailForm>({
-      email: computed(() => props.userMail).value,
+      email: computed(() => props.userMail),
       code: "",
     });
 
@@ -109,10 +114,19 @@ export default defineComponent({
     async function onSubmit() {
       emit("setLoading", true);
       try {
+        const { email, code } = emailForm;
         const response = await store.dispatch("requestVerifyJoin", {
-          ...emailForm,
+          email,
+          code,
+        });
+        emit("setLoading", false);
+        ElMessage({
+          showClose: true,
+          message: "인증완료",
+          type: "success",
         });
       } catch (error) {
+        emit("setLoading", false);
         const errStatus = error.response.status;
 
         if (errStatus === 404) {
@@ -152,6 +166,12 @@ export default defineComponent({
           "requestSendJoinCode",
           {
             ...emailForm,
+            from: "iJoon.noreply",
+            subject: `${projectName}에 오신것을 환영합니다.`,
+            contentType: "text/html",
+            // charset: "EUC-KR",
+            charset: "UTF-8",
+            body: sendEmailText("join", projectName),
           }
         );
         emit("setLoading", false);
@@ -187,4 +207,10 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 @import "./emailAuth.scss";
+</style>
+
+<style lang="scss">
+.remail_container {
+  padding-right: 0px;
+}
 </style>

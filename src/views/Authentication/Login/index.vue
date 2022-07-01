@@ -1,20 +1,21 @@
 <template>
-  <div class="resister-container">
-    <div class="resister-form-container">
+  <div class="login-container">
+    <div class="login-form-container">
       <div
         v-loading="isLoading"
         element-loading-background="rgba(238, 238, 238, 0.7)"
       >
         <div class="title-container mb-5">
           <h3 class="title text-center">
-            {{ isEmailCode ? "Email Auth" : "Resister" }}
+            {{ isEmailCode ? "Email Auth" : "Login" }}
           </h3>
         </div>
         <div class="form-div">
-          <ResisterVue
-            id="resister"
+          <LoginVue
+            id="login"
             @setLoading="setLoading"
             @setEmailAuth="setEmailAuth"
+            :isLoading="isLoading"
           />
           <EmailAuthVue
             id="email"
@@ -23,16 +24,12 @@
             @setLoading="setLoading"
           />
         </div>
-        <p
-          v-if="!isEmailCode"
-          class="text-center text-muted"
-          style="margin: 0px"
-        >
-          기존 가입한 이메일이 존재합니까?
+        <p v-if="!isEmailCode" class="text-center text-muted mb-0">
+          계정이 없으신가요?
           <span
-            @click="goPage('Login')"
+            @click="goPage('Resister')"
             class="text-primary fw-semibold btn-text"
-            >로그인</span
+            >회원가입</span
           >
         </p>
       </div>
@@ -42,19 +39,17 @@
 
 <script lang="ts">
 import { defineComponent, ref } from "vue";
-import ResisterVue from "./Resister.vue";
-import EmailAuthVue from "../components/EmailAuth/EmailAuth.vue";
-import { useStore } from "vuex";
 import { useRouter } from "vue-router";
+import LoginVue from "./Login.vue";
+import EmailAuthVue from "../components/EmailAuth/EmailAuth.vue";
 import gsap from "gsap";
 
 export default defineComponent({
   components: {
-    ResisterVue,
+    LoginVue,
     EmailAuthVue,
   },
   setup() {
-    const store = useStore();
     const router = useRouter();
     const isLoading = ref<boolean>(false);
 
@@ -70,11 +65,11 @@ export default defineComponent({
       isLoading.value = data;
     }
 
-    // 이메일 인증
+    // 이메일 인증 열기
     const isEmailCode = ref(false);
     const userMail = ref<string>("");
     function setEmailAuth(data: boolean, email: string) {
-      gsap.to("#resister", { duration: 0, opacity: 0, display: "none" });
+      gsap.to("#login", { duration: 0, opacity: 0, display: "none" });
       gsap.from("#email", {
         duration: 1.5,
         x: 40,
@@ -86,22 +81,22 @@ export default defineComponent({
 
     return {
       goPage,
-      isEmailCode,
       isLoading,
       setLoading,
       setEmailAuth,
+      isEmailCode,
       userMail,
     };
   },
 });
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 @import "./index.scss";
 </style>
 
 <style lang="scss">
-.resister-container {
+.login-container {
   .el-input__wrapper {
     background-color: transparent;
     box-shadow: none;

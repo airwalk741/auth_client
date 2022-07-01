@@ -64,6 +64,7 @@
 import { defineComponent, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { ElMessage } from "element-plus";
+import { sendEmailText } from "../components/EmailAuth/emailText";
 
 interface ResisterForm {
   email: string;
@@ -77,6 +78,7 @@ export default defineComponent({
   emits: ["setLoading", "setEmailAuth"],
   setup(props, { emit }) {
     const store = useStore();
+    const projectName = process.env.VUE_APP_PROJECTNAME;
 
     // 회원가입 폼
     const refresisterForm = ref<any>(null);
@@ -209,6 +211,12 @@ export default defineComponent({
           "requestSendJoinCode",
           {
             ...resisterForm,
+            from: "iJoon.noreply",
+            subject: `${projectName}에 오신것을 환영합니다.`,
+            contentType: "text/html",
+            // charset: "EUC-KR",
+            charset: "UTF-8",
+            body: sendEmailText("join", projectName),
           }
         );
         emit("setLoading", false); // 로딩스피너
