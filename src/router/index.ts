@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import Home from "../views/Home.vue";
 import LoginVue from "@/views/Authentication/Login/index.vue";
 import ResisterVue from "@/views/Authentication/Resister/index.vue";
+import PasswordChange from "@/views/Authentication/Password/index.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -18,6 +19,11 @@ const routes: Array<RouteRecordRaw> = [
     path: "/resister",
     name: "Resister",
     component: ResisterVue,
+  },
+  {
+    path: "/password",
+    name: "PasswordChange",
+    component: PasswordChange,
   },
 ];
 

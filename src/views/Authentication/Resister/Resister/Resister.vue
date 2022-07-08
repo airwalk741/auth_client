@@ -64,7 +64,7 @@
 import { defineComponent, reactive, ref } from "vue";
 import { useStore } from "vuex";
 import { ElMessage } from "element-plus";
-import { sendEmailText } from "../components/EmailAuth/emailText";
+import { sendEmailText } from "@/views/Authentication/components/EmailAuth/emailText";
 
 interface ResisterForm {
   email: string;

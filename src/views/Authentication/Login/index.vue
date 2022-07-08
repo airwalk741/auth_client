@@ -40,8 +40,8 @@
 <script lang="ts">
 import { defineComponent, ref } from "vue";
 import { useRouter } from "vue-router";
-import LoginVue from "./Login.vue";
-import EmailAuthVue from "../components/EmailAuth/EmailAuth.vue";
+import LoginVue from "./Login/Login.vue";
+import EmailAuthVue from "@/views/Authentication/components/EmailAuth/EmailAuth.vue";
 import gsap from "gsap";
 
 export default defineComponent({

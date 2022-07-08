@@ -42,7 +42,7 @@
 
 <script lang="ts">
 import { defineComponent, ref } from "vue";
-import ResisterVue from "./Resister.vue";
+import ResisterVue from "./Resister/Resister.vue";
 import EmailAuthVue from "../components/EmailAuth/EmailAuth.vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";

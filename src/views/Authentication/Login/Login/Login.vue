@@ -24,7 +24,10 @@
         :disabled="isLoading"
       />
     </el-form-item>
-    <p class="text-end text-muted btn-text btn-text mb-0">
+    <p
+      @click="goPage('PasswordChange')"
+      class="text-end text-muted btn-text btn-text mb-0"
+    >
       비밀번호를 잊으셨나요?
     </p>
     <el-button
@@ -45,7 +48,7 @@ import { useStore } from "vuex";
 import { ElMessage } from "element-plus";
 import axios from "axios";
 import { useRouter } from "vue-router";
-import { sendEmailText } from "../components/EmailAuth/emailText";
+import { sendEmailText } from "../../components/EmailAuth/emailText";
 
 interface LoginForm {
   email: string;
@@ -119,9 +122,9 @@ export default defineComponent({
 
       store
         .dispatch("requestLogin", { ...loginForm })
-        .then(res => {
+        .then((res) => {
           console.log(res);
-          store.commit("setIsLogin", true);
+          store.commit("SET_ISLOGIN", true);
           emit("setLoading", false);
         })
         .catch(async (err: any) => {
@@ -153,7 +156,7 @@ export default defineComponent({
 
             // 중복 로그인 제거 후 바로 로그인
             try {
-              await store.dispatch("requestRemoveToken", data);
+              await store.dispatch("requestLogoutWithAccountRequest", data);
               onSubmit();
             } catch (error: any) {
               const errStatus = error.response.status;
@@ -228,12 +231,19 @@ export default defineComponent({
         });
     }
 
+    function goPage(page: string) {
+      router.push({
+        name: page,
+      });
+    }
+
     return {
       loginForm,
       rules,
       onSubmit,
       activeBtn,
       isBtn,
+      goPage,
     };
   },
 });
