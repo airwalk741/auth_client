@@ -41,6 +41,12 @@ interface VerifyResetCodeRequest {
   code: string;
 }
 
+interface ResetPasswordRequest {
+  email: string;
+  code: string;
+  password: string;
+}
+
 export {
   Login,
   LogoutWithAccountRequest,
@@ -49,4 +55,5 @@ export {
   VerifyJoin,
   PasswordRequest,
   VerifyResetCodeRequest,
+  ResetPasswordRequest,
 };

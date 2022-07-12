@@ -8,6 +8,7 @@ import {
   VerifyJoin,
   PasswordRequest,
   VerifyResetCodeRequest,
+  ResetPasswordRequest,
 } from "./modules/userTypes";
 
 interface User {
@@ -47,18 +48,25 @@ export default createStore<User>({
       const url = "/api/auth/v1/join/code";
       return axios.post(url, data);
     },
-    // 인증 코드 인증
+    // 회원가입 코드 인증
     requestVerifyJoin: function (payload, data: VerifyJoin) {
       const url = "/api/auth/v1/join/verification";
       return axios.post(url, data);
     },
+    // 비밀번호 찾기 이메일 보내기
     requestSendResetCode: function (payload, data: SendCodeRequest) {
       const url = "/api/auth/v1/reset/code";
       return axios.post(url, data);
     },
+    // 비밀번호 찾기 코드 인증
     requestVerifyResetCode: function (payload, data: VerifyResetCodeRequest) {
       const url = "/api/auth/v1/reset/code/verification";
       return axios.post(url, data);
+    },
+    // 비밀번호 변경하기
+    requestResetPassword: function (payload, data: ResetPasswordRequest) {
+      const url = "/api/auth/v1/reset";
+      return axios.put(url, data);
     },
   },
   modules: {},

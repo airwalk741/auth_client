@@ -1,43 +1,48 @@
 <template>
-  <el-form
-    ref="refpasswordForm"
-    class="password_form"
-    :model="passwordForm"
-    :rules="rules"
-    @keyup.enter="onSubmit"
-  >
-    <el-form-item prop="password">
-      <el-input
-        name="password"
-        type="password"
-        placeholder="Input Password"
-        v-model="passwordForm.password"
-        @input="activeBtn"
-        :disabled="isLoading"
-      />
-    </el-form-item>
+  <div class="password_form">
+    <p class="text-start text-muted mb-2">
+      변경하고자 하는 비밀번호를 입력해 주세요.
+    </p>
 
-    <el-form-item prop="password">
-      <el-input
-        name="password"
-        type="password"
-        placeholder="Input password confirmation"
-        v-model="passwordForm.passwordConfirmation"
-        @input="activeBtn"
-        :disabled="isLoading"
-      />
-    </el-form-item>
-
-    <el-button
-      @click="onSubmit"
-      type="primary"
-      class="password-btn"
-      size="default"
-      :disabled="isBtn"
+    <el-form
+      ref="refpasswordForm"
+      :model="passwordForm"
+      :rules="rules"
+      @keyup.enter="onSubmit"
     >
-      Submit
-    </el-button>
-  </el-form>
+      <el-form-item prop="password">
+        <el-input
+          name="password"
+          type="password"
+          placeholder="Input Password"
+          v-model="passwordForm.password"
+          @input="activeBtn"
+          :disabled="isLoading"
+        />
+      </el-form-item>
+
+      <el-form-item prop="passwordConfirmation">
+        <el-input
+          name="passwordConfirmation"
+          type="password"
+          placeholder="Input password confirmation"
+          v-model="passwordForm.passwordConfirmation"
+          @input="activeBtn"
+          :disabled="isLoading"
+        />
+      </el-form-item>
+
+      <el-button
+        @click="onSubmit"
+        type="primary"
+        class="password-btn"
+        size="default"
+        :disabled="isBtn"
+      >
+        Submit
+      </el-button>
+    </el-form>
+  </div>
 </template>
 
 <script lang="ts">
@@ -55,13 +60,12 @@ interface passwordForm {
 }
 
 export default defineComponent({
-  emits: ["setLoading", "setEmailAuth"],
+  emits: ["setLoading", "setEmailAuth", "changePassword"],
   props: {
     isLoading: {
       type: Boolean,
     },
   },
-
   setup(props, { emit }) {
     const store = useStore();
     const router = useRouter();
@@ -69,12 +73,13 @@ export default defineComponent({
 
     onMounted(() => {
       gsap.from([".password_form"], {
-        duration: 1.5,
-        opacity: 100,
+        duration: 2,
+        opacity: 0,
       });
     });
 
-    // 로그인 폼
+    // 패스워드 변경 폼
+    const refpasswordForm = ref<HTMLFormElement>(null);
     const passwordForm = reactive<passwordForm>({
       email: "",
       password: "",
@@ -82,29 +87,73 @@ export default defineComponent({
     });
 
     // 유효성 검사
+    const validatePassword = (rule: any, value: string, callback: any) => {
+      if (value === "") {
+        callback(new Error("비밀번호는 필수 입력값입니다."));
+      } else {
+        if (passwordForm.password !== "") {
+          if (!refpasswordForm.value) return;
+          refpasswordForm.value.validateField(
+            "passwordConfirmation",
+            () => null
+          );
+        }
+        callback();
+      }
+    };
+
+    const validatePasswordConfirm = (
+      rule: any,
+      value: string,
+      callback: any
+    ) => {
+      if (value === "") {
+        callback(new Error("비밀번호 확인은 필수 입력값입니다."));
+      } else if (value !== passwordForm.password) {
+        callback(new Error("비밀번호와 맞지 않습니다."));
+      } else {
+        callback();
+      }
+    };
     const rules = reactive<any>({
       password: [
         {
           required: true,
-          message: "비밀번호를 입력해 주세요",
+          message: "비밀번호를 입력해 주세요.",
           trigger: "blur",
         },
         {
-          max: 16,
-          message: "비밀번호는 최대 16자리입니다.",
-          trigger: ["blur", "change"],
+          pattern: /^(?=.*[a-zA-Z])(?=.*[!@#$%^*+=-])(?=.*[0-9]).{9,16}$/,
+          message:
+            "영어, 숫자, 특수문자를 최소 하나씩 포함한 9~16자리 ( ! @ # $ % ^ * + = - )",
+          trigger: ["change", "blur"],
         },
+        { validator: validatePassword, trigger: ["change", "blur"] },
+      ],
+      passwordConfirmation: [
+        {
+          required: true,
+          message: "비밀번호 확인을 입력해 주세요.",
+          trigger: "blur",
+        },
+        {
+          pattern: /^(?=.*[a-zA-Z])(?=.*[!@#$%^*+=-])(?=.*[0-9]).{9,16}$/,
+          message:
+            "영어, 숫자, 특수문자를 최소 하나씩 포함한 9~16자리 ( ! @ # $ % ^ * + = - )",
+          trigger: ["change", "blur"],
+        },
+        { validator: validatePasswordConfirm, trigger: ["change", "blur"] },
       ],
     });
 
     // 버튼 활성화
     const isBtn = ref<boolean>(true);
     function activeBtn(): void {
-      const { email, password } = passwordForm;
-      const emailRef =
-        /^([\w\.\_\-])*[a-zA-Z0-9]+([\w\.\_\-])*([a-zA-Z0-9])+([\w\.\_\-])+@([a-zA-Z0-9]+\.)+[a-zA-Z0-9]{2,8}$/;
-      if (emailRef.test(email)) {
-        if (password) {
+      const { passwordConfirmation, password } = passwordForm;
+      const passwordRef =
+        /^(?=.*[a-zA-Z])(?=.*[!@#$%^*+=-])(?=.*[0-9]).{9,16}$/;
+      if (passwordRef.test(password)) {
+        if (password === passwordConfirmation) {
           isBtn.value = false;
           return;
         }
@@ -112,121 +161,10 @@ export default defineComponent({
       isBtn.value = true;
     }
 
-    // 로그인 요청
+    // 변경 요청
     function onSubmit(): void {
       if (isBtn.value) return;
-
-      emit("setLoading", true);
-
-      store
-        .dispatch("requestLogin", { ...passwordForm })
-        .then((res) => {
-          console.log(res);
-          store.commit("SET_ISLOGIN", true);
-          emit("setLoading", false);
-        })
-        .catch(async (err: any) => {
-          const errData = err.response.data;
-          const { status } = err.response;
-          let errMessage: any;
-          if (status !== 401) emit("setLoading", false);
-          try {
-            errMessage =
-              errData.message !== undefined ? JSON.parse(errData.message) : "";
-          } catch {
-            //
-          }
-
-          if (status === 429) {
-            // 오래전에 로그인 했던것 삭제
-            const { login_infos } = errMessage;
-            let targetRemove: string | undefined;
-            let timeNumber = Number.MAX_SAFE_INTEGER;
-            for (let [key, value] of Object.entries<any>(login_infos)) {
-              if (timeNumber > Number(value.date)) {
-                targetRemove = key;
-              }
-            }
-            const data = {
-              ...passwordForm,
-              login_key: targetRemove,
-            };
-
-            // 중복 로그인 제거 후 바로 로그인
-            try {
-              await store.dispatch("requestLogoutWithAccountRequest", data);
-              onSubmit();
-            } catch (error: any) {
-              const errStatus = error.response.status;
-              if (errStatus === 404) {
-                ElMessage({
-                  showClose: true,
-                  message: `이미 로그아웃된 정보입니다. 새로고침을 시도해 주세요.`,
-                  type: "warning",
-                });
-              } else {
-                console.log(error.response);
-                ElMessage({
-                  showClose: true,
-                  message: `관리자에게 문의해 주세요.`,
-                  type: "error",
-                });
-              }
-            }
-          } else if (status === 401) {
-            // 인증 대기 유저
-            const emailResponse: Promise<any> = await store.dispatch(
-              "requestSendJoinCode",
-              {
-                ...passwordForm,
-                from: "iJoon.noreply",
-                subject: `${projectName}에 오신것을 환영합니다.`,
-                contentType: "text/html",
-                // charset: "EUC-KR",
-                charset: "UTF-8",
-                body: sendEmailText("join", projectName),
-              }
-            );
-
-            emit("setLoading", false); // 로딩스피너
-            emit("setEmailAuth", true, passwordForm.email); // 이메일 인증 열기
-          } else if (status === 404 || status === 400) {
-            // 이메일, 비밀번호 틀렸을 때
-            ElMessage({
-              showClose: true,
-              message: `이메일 또는 비밀번호가 올바르지 않습니다.`,
-              type: "warning",
-              grouping: true,
-            });
-          } else if (status === 409) {
-            // 로그인 시간 제한
-            const { allowed_after } = errMessage;
-            ElMessage({
-              showClose: true,
-              message: `${allowed_after}초 후 다시 이용해 주세요.`,
-              type: "warning",
-              grouping: true,
-            });
-            console.log(errMessage);
-            // 로그인 허용 시간
-          } else if (status > 499) {
-            // 서버에러
-            ElMessage({
-              showClose: true,
-              message: `서버에러 입니다. 관리자에게 문의하세요.`,
-              type: "error",
-              grouping: true,
-            });
-          } else if (status < 400 && status > 299) {
-            // 네트워크 에러
-            ElMessage({
-              showClose: true,
-              message: `네트워크 에러입니다. 관리자에게 문의하세요.`,
-              type: "error",
-              grouping: true,
-            });
-          }
-        });
+      emit("changePassword", { ...passwordForm });
     }
 
     function goPage(page: string) {
@@ -242,6 +180,7 @@ export default defineComponent({
       activeBtn,
       isBtn,
       goPage,
+      refpasswordForm,
     };
   },
 });

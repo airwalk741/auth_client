@@ -7,6 +7,10 @@
     @keyup.enter="onSubmit"
     v-if="step !== 2"
   >
+    <p class="text-end text-muted mb-2" v-if="step > 0" @click="reSendEmail">
+      <span class="text-primary fw-semibold btn-text">재전송</span>
+    </p>
+
     <input type="text" style="display: none" />
 
     <el-form-item prop="email">
@@ -38,7 +42,7 @@
       Submit
     </el-button>
   </el-form>
-  <PasswordChangeForm v-else />
+  <PasswordChangeForm v-else @changePassword="changePassword" />
 </template>
 
 <script lang="ts">
@@ -50,9 +54,15 @@ import { ElMessage } from "element-plus";
 import gsap from "gsap";
 import PasswordChangeForm from "@/views/Authentication/Password/PasswordChangeForm/PasswordChangeForm.vue";
 
-interface passwordForm {
+interface PasswordForm {
   email: string;
   code: string;
+}
+
+interface PasswordChangeData {
+  email: string;
+  password: string;
+  passwordConfirmation: string;
 }
 
 export default defineComponent({
@@ -71,11 +81,11 @@ export default defineComponent({
     const router = useRouter();
     const projectName = process.env.VUE_APP_PROJECTNAME;
 
-    const step = ref(2);
+    const step = ref(0);
 
     // 로그인 폼
-    const passwordForm = reactive<passwordForm>({
-      email: "airwalk741@naver.com",
+    const passwordForm = reactive<PasswordForm>({
+      email: "",
       code: "",
     });
 
@@ -134,9 +144,8 @@ export default defineComponent({
             ...passwordForm,
           });
           console.log("성공");
-          step.value++;
+          step.value = 1;
           emit("setLoading", false);
-          step.value++;
         } catch (err) {
           emit("setLoading", false);
           const { status } = err.response;
@@ -161,6 +170,7 @@ export default defineComponent({
         try {
           await store.dispatch("requestVerifyResetCode", { ...passwordForm });
           emit("setLoading", false);
+          step.value = 2;
         } catch (err) {
           emit("setLoading", false);
           const { status } = err.response;
@@ -198,6 +208,64 @@ export default defineComponent({
       activeBtn();
     }
 
+    // 변경하기
+    async function changePassword(data: PasswordChangeData) {
+      if (step.value !== 2) return;
+      const { email, code } = passwordForm;
+      const { password } = data;
+      emit("setLoading", true);
+      try {
+        await store.dispatch("requestResetPassword", {
+          email,
+          code,
+          password,
+        });
+        emit("setLoading", false);
+        router.push({
+          name: "Home",
+        });
+      } catch (err) {
+        emit("setLoading", false);
+        ElMessage({
+          showClose: true,
+          message: `관리자에게 문의하세요.`,
+          type: "error",
+          grouping: true,
+        });
+      }
+    }
+
+    // 재전송
+    async function reSendEmail() {
+      emit("setLoading", true);
+      const emailData = {
+        from: "iJoon.noreply",
+        subject: `${projectName}에 오신것을 환영합니다.`,
+        contentType: "text/html",
+        // charset: "EUC-KR",
+        charset: "UTF-8",
+        body: sendEmailText("join", projectName),
+      };
+
+      try {
+        await store.dispatch("requestSendResetCode", {
+          ...emailData,
+          ...passwordForm,
+        });
+        console.log("성공");
+        emit("setLoading", false);
+      } catch (err) {
+        emit("setLoading", false);
+        const { status } = err.response;
+        ElMessage({
+          showClose: true,
+          message: `관리자에게 문의하세요.`,
+          type: "error",
+          grouping: true,
+        });
+      }
+    }
+
     return {
       passwordForm,
       rules,
@@ -207,6 +275,8 @@ export default defineComponent({
       goPage,
       step,
       convertNumber,
+      changePassword,
+      reSendEmail,
     };
   },
 });
@@ -214,4 +284,12 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 @import "./password_form.scss";
+</style>
+
+<style lang="scss">
+.re_btn {
+  .el-button {
+    padding: 0px;
+  }
+}
 </style>
